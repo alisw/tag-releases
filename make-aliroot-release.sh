@@ -7,9 +7,9 @@ if [ "X$1" = X ]; then
   exit 1
 fi
 
-source $CONFIG
+. $CONFIG
 
-function require() {
+require() {
   VAR=
   eval "VAR=\$${1}"
   if [ "X$VAR" = X ]; then
@@ -40,33 +40,29 @@ mkdir -p $MIRROR_DIR
 GIT_DIR=$MIRROR_DIR/AliRoot git fetch
 GIT_DIR=$MIRROR_DIR/AliPhysics git fetch
 
-rm -rf AliRoot AliPhysics
+export WORKDIR=$PWD
+rm -rf $WORKDIR/AliRoot $WORKDIR/AliPhysics
 # Create a tag for AliRoot
-git clone -b $OLD_ALIROOT $MIRROR_DIR/AliRoot AliRoot
-pushd AliRoot
-  git reset --hard $OLD_ALIROOT
-  [ ! "X$ALIROOT_CHERRY_PICKS" = "X" ] && git cherry-pick $ALIROOT_CHERRY_PICKS
-  git tag $NEW_ALIROOT
-  git log -n 10
-popd
+git clone -b $OLD_ALIROOT $MIRROR_DIR/AliRoot $WORKDIR/AliRoot
+cd $WORKDIR/AliRoot
+git reset --hard $OLD_ALIROOT
+[ ! "X$ALIROOT_CHERRY_PICKS" = "X" ] && git cherry-pick $ALIROOT_CHERRY_PICKS
+git tag $NEW_ALIROOT
+git log -n 10
 
 # Create a tag for AliPhysics
-git clone -b $OLD_ALIPHYSICS $MIRROR_DIR/AliPhysics AliPhysics
-pushd AliPhysics
-  git reset --hard $OLD_ALIPHYSICS
-  [ ! "X$ALIPHYSICS_CHERRY_PICKS" = "X" ] && git cherry-pick $ALIPHYSICS_CHERRY_PICKS
-  git tag $NEW_ALIPHYSICS
-  git log -n 10
-popd
+git clone -b $OLD_ALIPHYSICS $MIRROR_DIR/AliPhysics $WORKDIR/AliPhysics
+cd $WORKDIR/AliPhysics
+git reset --hard $OLD_ALIPHYSICS
+[ ! "X$ALIPHYSICS_CHERRY_PICKS" = "X" ] && git cherry-pick $ALIPHYSICS_CHERRY_PICKS
+git tag $NEW_ALIPHYSICS
+git log -n 10
 
+cd $WORKDIR
 if [ "X$PUSH_TAGS" = X ]; then
   exit 0
 fi
 
 set +x
-pushd AliRoot
-  echo git push $FORCE $ALIROOT_UPSTREAM $NEW_ALIROOT
-popd
-pushd AliPhysics
-  echo git push $FORCE $ALIPHYSICS_UPSTREAM $NEW_ALIPHYSICS
-popd
+echo GIT_DIR=$WORKDIR/AliRoot/.git git push $FORCE $ALIROOT_UPSTREAM $NEW_ALIROOT
+echo GIT_DIR=$WORKDIR/AliPhysics/.git git push $FORCE $ALIPHYSICS_UPSTREAM $NEW_ALIPHYSICS

@@ -1,0 +1,27 @@
+language: bash
+sudo: false
+script: |
+  set -ex
+  if [ ! "X$TRAVIS_PULL_REQUEST" = "Xfalse" ]; then
+    BASE_COMMIT=$(git rev-parse $TRAVIS_BRANCH)
+    echo "Attempt at creating tags from the following "
+    COMMIT_FILES=$(git diff --name-only -r $BASE_COMMIT)
+
+    # Do nothing if a file other than the config folder is changed
+    for x in $COMMIT_FILES; do
+      case $x in
+        config/*) ;;
+        *) exit 1;;
+      esac
+    done
+    for x in $COMMIT_FILES; do
+      # Reset the GITHUB_TOKEN so that the configuration does not have
+      # any way to get it.
+      (GITHUB_TOKEN= ./make-aliroot-release.sh $x)
+    done
+  else
+    COMMIT_FILES=$(git diff-tree --no-commit-id --name-only -r HEAD | grep 'config')
+    for x in $COMMIT_FILES; do
+      PUSH_TAGS=true ./make-aliroot-release.sh $x
+    done
+  fi
